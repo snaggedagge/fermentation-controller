@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fermentation Controller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c2340 0%, #1a3a5c 50%, #0c2340 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            color: #6ba3d6;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 0.85em;
+        }
+
+        .temp-display {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .current-temp {
+            font-size: 4em;
+            font-weight: 200;
+            color: #00e676;
+            line-height: 1;
+        }
+
+        .current-temp span {
+            font-size: 0.4em;
+            color: #888;
+        }
+
+        .target-temp {
+            font-size: 1.2em;
+            color: #ffd740;
+            margin-top: 10px;
+        }
+
+        .status-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .chart-title {
+            color: #aaa;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .chart-timeframe {
+            display: flex;
+            gap: 5px;
+        }
+
+        .chart-btn {
+            padding: 4px 10px;
+            border: 1px solid #448aff;
+            background: transparent;
+            color: #448aff;
+            border-radius: 4px;
+            font-size: 0.75em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chart-btn:hover {
+            background: rgba(68, 138, 255, 0.2);
+        }
+
+        .chart-btn.active {
+            background: #448aff;
+            color: white;
+        }
+
+        #tempChart {
+            width: 100%;
+            height: 150px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .status-dot.cooling {
+            background: #448aff;
+            box-shadow: 0 0 10px #448aff;
+        }
+
+        .status-dot.heating {
+            background: #ff5252;
+            box-shadow: 0 0 10px #ff5252;
+        }
+
+        .status-dot.idle {
+            background: #666;
+        }
+
+        .status-label {
+            color: #ccc;
+            font-size: 0.9em;
+        }
+
+        .temp-control {
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .temp-control label {
+            color: #aaa;
+            display: block;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .temp-input-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .temp-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px solid #448aff;
+            background: transparent;
+            color: #448aff;
+            font-size: 1.5em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .temp-btn:hover {
+            background: #448aff;
+            color: white;
+        }
+
+        .temp-btn:active {
+            transform: scale(0.95);
+        }
+
+        #targetTemp {
+            width: 80px;
+            text-align: center;
+            font-size: 1.5em;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #333;
+            border-radius: 10px;
+            color: #ffd740;
+            padding: 10px;
+        }
+
+        #targetTemp:focus {
+            outline: none;
+            border-color: #ffd740;
+        }
+
+        .apply-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            background: linear-gradient(135deg, #448aff, #0288d1);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1em;
+            font-weight: 500;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .apply-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(68, 138, 255, 0.4);
+        }
+
+        .apply-btn:active {
+            transform: translateY(0);
+        }
+
+        .ip-display {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .ip-display span {
+            color: #6ba3d6;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .message {
+            text-align: center;
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .message.success {
+            background: rgba(0, 230, 118, 0.2);
+            color: #00e676;
+            display: block;
+        }
+
+        .message.error {
+            background: rgba(255, 82, 82, 0.2);
+            color: #ff5252;
+            display: block;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <button class="refresh-btn" onclick="updateStatus()" title="Refresh">&#8635;</button>
+
+    <div class="container">
+        <h1>&#127866; FERMENTATION</h1>
+        <p class="subtitle">Temperature Controller</p>
+
+        <div class="temp-display">
+            <div class="current-temp" id="currentTemp">--<span>&#176;C</span></div>
+            <div class="target-temp">Target: <span id="displayTarget">--</span>&#176;C</div>
+        </div>
+
+        <div class="status-indicators">
+            <div class="status-item">
+                <div class="status-dot idle" id="coolingDot"></div>
+                <span class="status-label" id="coolingLabel">Cooling</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot idle" id="heatingDot"></div>
+                <span class="status-label" id="heatingLabel">Heating</span>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <span class="chart-title">Temperature History</span>
+                <div class="chart-timeframe">
+                    <button class="chart-btn active" data-hours="1" onclick="setTimeframe(1)">1H</button>
+                    <button class="chart-btn" data-hours="6" onclick="setTimeframe(6)">6H</button>
+                    <button class="chart-btn" data-hours="24" onclick="setTimeframe(24)">24H</button>
+                </div>
+            </div>
+            <canvas id="tempChart"></canvas>
+            <div style="display:flex;justify-content:center;gap:16px;margin-top:8px;font-size:0.75em;color:#aaa">
+                <span><span style="color:#448aff">●</span> Cooling</span>
+                <span><span style="color:#00e676">●</span> Idle</span>
+                <span><span style="color:#ff5252">●</span> Heating</span>
+            </div>
+        </div>
+
+        <div class="temp-control">
+            <label for="targetTemp">Set Target Temperature</label>
+            <div class="temp-input-container">
+                <button class="temp-btn" onclick="adjustTemp(-0.5)">&#8722;</button>
+                <input type="number" id="targetTemp" step="0.5" min="5" max="30" value="20.0">
+                <button class="temp-btn" onclick="adjustTemp(0.5)">+</button>
+            </div>
+        </div>
+
+        <button class="apply-btn" onclick="setTemperature()">APPLY TEMPERATURE</button>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        // Auto-refresh every 3 seconds
+        setInterval(updateStatus, 3000);
+
+        // Initial load
+        updateStatus();
+
+        function updateStatus() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    // Update current temperature
+                    const tempEl = document.getElementById('currentTemp');
+                    if (data.current_temp > -50) {
+                        tempEl.innerHTML = data.current_temp.toFixed(1) + '<span>&#176;C</span>';
+                        // Color based on difference from target
+                        const diff = data.current_temp - data.target_temp;
+                        if (diff > 1) tempEl.style.color = '#ff5252';
+                        else if (diff < -1) tempEl.style.color = '#448aff';
+                        else tempEl.style.color = '#00e676';
+                    } else {
+                        tempEl.innerHTML = 'ERR<span>&#176;C</span>';
+                        tempEl.style.color = '#ff5252';
+                    }
+
+                    // Update target display
+                    document.getElementById('displayTarget').textContent = data.target_temp.toFixed(1);
+
+                    // Update cooling indicator
+                    const coolingDot = document.getElementById('coolingDot');
+                    const coolingLabel = document.getElementById('coolingLabel');
+                    if (data.cooling_active) {
+                        coolingDot.className = 'status-dot cooling';
+                        coolingLabel.style.color = '#448aff';
+                    } else {
+                        coolingDot.className = 'status-dot idle';
+                        coolingLabel.style.color = '#666';
+                    }
+
+                    // Update heating indicator
+                    const heatingDot = document.getElementById('heatingDot');
+                    const heatingLabel = document.getElementById('heatingLabel');
+                    if (data.heating_active) {
+                        heatingDot.className = 'status-dot heating';
+                        heatingLabel.style.color = '#ff5252';
+                    } else {
+                        heatingDot.className = 'status-dot idle';
+                        heatingLabel.style.color = '#666';
+                    }
+                })
+                .catch(err => {
+                    console.error('Status update failed:', err);
+                });
+        }
+
+        function adjustTemp(delta) {
+            const input = document.getElementById('targetTemp');
+            let value = parseFloat(input.value) || 20.0;
+            value = Math.round((value + delta) * 10) / 10;
+            value = Math.max(5, Math.min(30, value));
+            input.value = value.toFixed(1);
+        }
+
+        function setTemperature() {
+            const temp = parseFloat(document.getElementById('targetTemp').value);
+            const messageEl = document.getElementById('message');
+
+            if (isNaN(temp) || temp < 0 || temp > 30) {
+                messageEl.className = 'message error';
+                messageEl.textContent = 'Temperature must be between 0°C and 30°C';
+                return;
+            }
+
+            fetch('/set_temp?temp=' + temp)
+                .then(response => {
+                    if (response.ok) {
+                        messageEl.className = 'message success';
+                        messageEl.textContent = 'Temperature set to ' + temp.toFixed(1) + '°C';
+                        updateStatus();
+                        setTimeout(() => {
+                            messageEl.style.display = 'none';
+                        }, 3000);
+                    } else {
+                        throw new Error('Server error');
+                    }
+                })
+                .catch(err => {
+                    messageEl.className = 'message error';
+                    messageEl.textContent = 'Failed to set temperature';
+                });
+        }
+
+        // Temperature chart
+        const chartCanvas = document.getElementById('tempChart');
+        const chartCtx = chartCanvas.getContext('2d');
+        let currentData = [];
+        let currentTimeframe = 1; // hours
+
+        // Set chart dimensions
+        function resizeChart() {
+            const container = chartCanvas.parentElement;
+            const width = container.clientWidth - 30;
+            const height = 150;
+            chartCanvas.width = width;
+            chartCanvas.height = height;
+            drawChart();
+        }
+
+        // Set timeframe
+        function setTimeframe(hours) {
+            currentTimeframe = hours;
+            
+            // Update button states
+            document.querySelectorAll('.chart-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.hours) === hours);
+            });
+            
+            loadChartData();
+        }
+
+        // Load chart data from API
+        async function loadChartData() {
+            try {
+                let uri = `/history?hours=${currentTimeframe}`;
+                if (window.location.href.includes('localhost') || window.location.href.includes('file:')) {
+                    uri = `../test-data/${currentTimeframe}h.json`;
+                }
+                console.log(uri);
+                const response = await fetch(uri);
+                const data = await response.json();
+                currentData = data.data || [];
+                drawChart();
+            } catch (err) {
+                console.error('Failed to load chart data:', err);
+            }
+        }
+        // Draw the temperature chart
+        function drawChart() {
+    const width = chartCanvas.width;
+    const height = chartCanvas.height;
+    const padding = { top: 20, right: 10, bottom: 25, left: 45 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+
+    // Clear canvas
+    chartCtx.clearRect(0, 0, width, height);
+
+    // Only keep real numeric readings (filters null and sensor error values like -127)
+    const validPoints = currentData.filter(p => typeof p.temp === 'number' && p.temp > -50);
+    if (validPoints.length === 0) return;
+
+    // Find min/max temps
+    let minTemp = Infinity, maxTemp = -Infinity;
+    for (const point of validPoints) {
+        minTemp = Math.min(minTemp, point.temp);
+        maxTemp = Math.max(maxTemp, point.temp);
+    }
+
+    // Include the target in the y-range so the target line is always visible
+    const targetTemp = parseFloat(document.getElementById('displayTarget').textContent);
+    const hasTarget = !isNaN(targetTemp);
+    if (hasTarget) {
+        minTemp = Math.min(minTemp, targetTemp);
+        maxTemp = Math.max(maxTemp, targetTemp);
+    }
+
+    // Add some padding to the range
+    const tempRange = maxTemp - minTemp || 2;
+    minTemp -= tempRange * 0.1;
+    maxTemp += tempRange * 0.1;
+
+    const yOf = temp => padding.top + chartHeight * (1 - (temp - minTemp) / (maxTemp - minTemp));
+
+    // X position from timestamp: the axis spans the selected window, ending at the newest point
+    const windowSec = currentTimeframe * 3600;   // change to *3600*1000 if t is in ms
+    const tEnd = validPoints[validPoints.length - 1].t;
+    const tStart = tEnd - windowSec;
+    const xOf = p => padding.left + ((p.t - tStart) / windowSec) * chartWidth;
+
+    // Draw grid lines
+    const gridLines = 5;
+    chartCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    chartCtx.lineWidth = 1;
+    chartCtx.font = '10px sans-serif';
+    chartCtx.fillStyle = '#888';
+    chartCtx.textAlign = 'right';
+
+    for (let i = 0; i <= gridLines; i++) {
+        const y = padding.top + (chartHeight / gridLines) * i;
+        const temp = maxTemp - ((maxTemp - minTemp) / gridLines) * i;
+
+        chartCtx.beginPath();
+        chartCtx.moveTo(padding.left, y);
+        chartCtx.lineTo(width - padding.right, y);
+        chartCtx.stroke();
+
+        chartCtx.fillText(temp.toFixed(1) + '°', padding.left - 5, y + 3);
+    }
+
+    // Draw target line
+    if (hasTarget) {
+        const targetY = yOf(targetTemp);
+
+        chartCtx.strokeStyle = 'rgba(255, 215, 64, 0.5)';
+        chartCtx.lineWidth = 1;
+        chartCtx.setLineDash([5, 5]);
+        chartCtx.beginPath();
+        chartCtx.moveTo(padding.left, targetY);
+        chartCtx.lineTo(width - padding.right, targetY);
+        chartCtx.stroke();
+        chartCtx.setLineDash([]);
+
+        chartCtx.fillStyle = '#ffd740';
+        chartCtx.textAlign = 'left';
+        chartCtx.font = '9px sans-serif';
+        chartCtx.fillText('Target: ' + targetTemp.toFixed(1) + '°', padding.left + 5, targetY - 5);
+    }
+
+    // Draw time labels (axis now really spans the selected window)
+    chartCtx.fillStyle = '#888';
+    chartCtx.textAlign = 'center';
+    chartCtx.font = '9px sans-serif';
+
+    const labelCount = 6;
+    for (let i = 0; i <= labelCount; i++) {
+        const x = padding.left + (i / labelCount) * chartWidth;
+        const timeAgo = windowSec - (windowSec / labelCount) * i;
+
+        let label = '';
+        if (timeAgo < 3600) {
+            label = Math.round(timeAgo / 60) + 'm ago';
+        } else {
+            label = Math.round(timeAgo / 3600) + 'h ago';
+        }
+
+        chartCtx.fillText(label, x, height - 5);
+    }
+
+    // Need at least two points for a line
+    if (validPoints.length < 2) return;
+
+    // Create gradient fill
+        const STATE_COLORS = { 0: '#00e676', 1: '#448aff', 2: '#ff5252' }; // idle, cooling, heating
+    const colorOf = p => STATE_COLORS[p.s] || STATE_COLORS[0];
+
+    // Neutral fill under the curve (the line carries the color)
+    const gradient = chartCtx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.12)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
+
+    chartCtx.beginPath();
+    validPoints.forEach((p, i) => {
+        const x = xOf(p), y = yOf(p.temp);
+        if (i === 0) chartCtx.moveTo(x, y); else chartCtx.lineTo(x, y);
+    });
+    const lastPoint = validPoints[validPoints.length - 1];
+    chartCtx.lineTo(xOf(lastPoint), height - padding.bottom);
+    chartCtx.lineTo(xOf(validPoints[0]), height - padding.bottom);
+    chartCtx.closePath();
+    chartCtx.fillStyle = gradient;
+    chartCtx.fill();
+
+    // Line: one segment per pair, colored by the state at the segment's start
+    chartCtx.lineWidth = 2;
+    chartCtx.lineCap = 'round';
+    for (let i = 1; i < validPoints.length; i++) {
+        const a = validPoints[i - 1], b = validPoints[i];
+        chartCtx.beginPath();
+        chartCtx.moveTo(xOf(a), yOf(a.temp));
+        chartCtx.lineTo(xOf(b), yOf(b.temp));
+        chartCtx.strokeStyle = colorOf(a);
+        chartCtx.stroke();
+    }
+
+    // Current-value dot and label, colored by the latest state
+    const dotX = xOf(lastPoint), dotY = yOf(lastPoint.temp), c = colorOf(lastPoint);
+
+    chartCtx.globalAlpha = 0.3;
+    chartCtx.beginPath();
+    chartCtx.arc(dotX, dotY, 6, 0, Math.PI * 2);
+    chartCtx.fillStyle = c;
+    chartCtx.fill();
+    chartCtx.globalAlpha = 1;
+
+    chartCtx.beginPath();
+    chartCtx.arc(dotX, dotY, 3, 0, Math.PI * 2);
+    chartCtx.fill();
+
+    chartCtx.fillStyle = c;
+    chartCtx.textAlign = 'right';
+    chartCtx.font = 'bold 11px sans-serif';
+    chartCtx.fillText(lastPoint.temp.toFixed(1) + '°', dotX - 10, dotY - 10);
+}
+        // Load chart on page load
+        window.addEventListener('load', () => {
+            resizeChart();
+            loadChartData();
+        });
+
+        window.addEventListener('resize', resizeChart);
+
+        // Refresh chart data periodically
+        setInterval(() => {
+            loadChartData();
+        }, 30000); // Every 30 seconds
+    </script>
+</body>
+</html>

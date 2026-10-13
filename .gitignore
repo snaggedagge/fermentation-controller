@@ -1,0 +1,26 @@
+# PlatformIO
+.idea/
+*.iws
+*.plf
+*.pyc
+__pycache__/
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PlatformIO artifacts
+.packages/
+.tinybfs/
+.tinyupload/
+build/
+.firmware/
+
+# Generated files
+pio-build/
+piotest/
+.pio/
+.vscode/
