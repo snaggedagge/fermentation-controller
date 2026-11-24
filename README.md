@@ -71,7 +71,7 @@ The LCD shows:
 
 ## Temperature Range
 
-- **Minimum**: 5°C (41°F)
+- **Minimum**: 0°C (41°F)
 - **Maximum**: 30°C (86°F)
 - **Default**: 20°C (68°F)
 - **Hysteresis**: 0.3°C (prevents relay chatter)

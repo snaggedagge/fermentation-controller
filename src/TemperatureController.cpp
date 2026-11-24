@@ -10,7 +10,7 @@ TemperatureController::TemperatureController()
       targetTemperature(DEFAULT_TARGET_TEMP),
       coolingActive(false), heatingActive(false),
       lastReadTime(0), readInterval(2000),
-      historyIndex(0), historyCount(0), currentTemperature(0.0f), lastHistoryRecordTime(0)
+      historyIndex(0), historyCount(0), currentTemperature(0.0f), lastHistoryRecordTime(0), lastStateChangeTime(0)
 {
     // Initialize history buffer
     memset(history, 0, sizeof(history));
@@ -153,33 +153,38 @@ void TemperatureController::controlRelays(float currentTemp) {
         return;
     }
     
-    // Hysteresis control
+    // Hysteresis control with deadband
+    // Deadband: target +/- hysteresis/2 where neither heating nor cooling is active
     // Cooling turns on when temp > target + hysteresis/2
-    // Cooling turns off when temp <= target
+    // Cooling turns off when temp <= target - hysteresis/2
     // Heating turns on when temp < target - hysteresis/2
-    // Heating turns off when temp >= target
+    // Heating turns off when temp >= target + hysteresis/2
     
-    float coolThreshold = targetTemperature + TEMPERATURE_HYSTERESIS / 2.0f;
-    float heatThreshold = targetTemperature - TEMPERATURE_HYSTERESIS / 2.0f;
-    
+    float coolOnThreshold = targetTemperature + TEMPERATURE_HYSTERESIS;
+    float coolOffThreshold = targetTemperature + 0.2f;
+    float heatOnThreshold = targetTemperature - TEMPERATURE_HYSTERESIS;
+    float heatOffThreshold = targetTemperature - 0.2f;
+    long now = millis();
     // Cooling logic
-    if (currentTemp > coolThreshold) {
+    if (currentTemp > coolOnThreshold && (now-lastStateChangeTime) > (1000 * 60 * 10)) {
         digitalWrite(COOLING_RELAY_PIN, LOW);
         coolingActive = true;
         Serial.println("Turning on cooling relay");
+        lastStateChangeTime = now;
     } 
-    else if (currentTemp <= targetTemperature) {
+    else if (currentTemp <= coolOffThreshold) {
         digitalWrite(COOLING_RELAY_PIN, HIGH);
         coolingActive = false;
         Serial.println("Turning off cooling relay");
     }
     
     // Heating logic
-    if (currentTemp < heatThreshold) {
+    if (currentTemp < heatOnThreshold && (now-lastStateChangeTime) > (1000 * 60 * 10)) {
         digitalWrite(HEATING_RELAY_PIN, LOW);
         heatingActive = true;
         Serial.println("Turning on heating relay");
-    } else if (currentTemp >= targetTemperature) {
+        lastStateChangeTime = now;
+    } else if (currentTemp >= heatOffThreshold) {
         digitalWrite(HEATING_RELAY_PIN, HIGH);
         heatingActive = false;
         Serial.println("Turning off heating relay");

@@ -15,6 +15,7 @@
 #include <WiFi.h>
 #include <ESPmDNS.h>
 #include <ArduinoOTA.h>
+#include <HTTPClient.h>
 
 // Project includes
 #include "TemperatureController.h"
@@ -23,8 +24,16 @@
 
 // ===== WIFI CONFIGURATION =====
 // Change these to match your network
-const char* WIFI_SSID = "4G-Gateway-21E0";
+const char* WIFI_SSID = "Lummelunda";
 const char* WIFI_PASSWORD = "snaggedagge";
+
+// ===== NTFY NOTIFICATION =====
+// Topic name acts as the "password" on ntfy.sh - pick something unguessable
+const char* NTFY_TOPIC = "fermentation-controller-ggf12Lmn1";
+const float NTFY_TARGET_WINDOW = 1.0f;             // notify when within this many °C of target
+const unsigned long NTFY_RETRY_INTERVAL = 30000;   // retry delay after a failed send
+bool targetReachedNotified = false;
+unsigned long lastNtfyAttempt = 0;
 
 // ===== GLOBAL INSTANCES =====
 TemperatureController tempController;
@@ -51,6 +60,36 @@ void onWiFiDisconnect(const WiFiEvent_t event, WiFiEventInfo_t info) {
     Serial.println("Disconnected from WiFi");
     wifiConnected = false;
     webServer.setConnected(false);
+}
+
+// Send a plain-text notification via ntfy.sh. Returns true on success.
+bool sendNtfy(const char* title, const String& message) {
+    HTTPClient http;
+    http.setTimeout(3000);
+    String url = String("http://ntfy.sh/") + NTFY_TOPIC;
+    if (!http.begin(url)) return false;
+    http.addHeader("Title", title);
+    http.addHeader("Tags", "beer");
+    int code = http.POST(message);
+    http.end();
+    Serial.printf("ntfy response: %d\n", code);
+    return code == 200;
+}
+
+// Notify once per boot the first time the temperature is within range of target
+void checkTargetReached(float currentTemp) {
+    if (targetReachedNotified || !wifiConnected) return;
+    float target = tempController.getTargetTemperature();
+    if (fabsf(currentTemp - target) > NTFY_TARGET_WINDOW) return;  // also skips sensor error (-999)
+
+    unsigned long now = millis();
+    if (lastNtfyAttempt != 0 && now - lastNtfyAttempt < NTFY_RETRY_INTERVAL) return;
+    lastNtfyAttempt = now;
+
+    String msg = String("Temperature is ") + String(currentTemp, 1) + " C (target " + String(target, 1) + " C)";
+    if (sendNtfy("Fermentation: target reached", msg)) {
+        targetReachedNotified = true;
+    }
 }
 
 // ===== SETUP =====
@@ -159,6 +198,7 @@ void loop() {
         float currentTemp = tempController.readTemperature();
         // Control relays based on temperatureThe 
         tempController.controlRelays(currentTemp);
+        checkTargetReached(currentTemp);
         
         // Update display
         strncpy(wifiIPBuffer, wifiConnected ? WiFi.localIP().toString().c_str() : "", 16);

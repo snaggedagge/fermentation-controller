@@ -16,7 +16,7 @@
 #define HEATING_RELAY_PIN 27 // Heating relay
 
 // Hysteresis for relay control (prevents rapid switching)
-#define TEMPERATURE_HYSTERESIS 0.5f  // °C
+#define TEMPERATURE_HYSTERESIS 0.3f  // °C
 
 // Target temperature range
 #define MIN_TARGET_TEMP 0.0f   // °C
@@ -63,6 +63,7 @@ private:
     
     unsigned long lastReadTime;
     unsigned long lastHistoryRecordTime;
+    unsigned long lastStateChangeTime;
     unsigned long readInterval;  // ms between temperature reads
     
     // Temperature history ring buffer
